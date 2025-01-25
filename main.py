@@ -1,115 +1,122 @@
 import tkinter as tk
-from tkinter import ttk
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-import serial
-import time
-import csv
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import numpy as np
 
-# Data storage
-altitude_data = []
-pressure_data = []
-temperature_data = []
-voltage_data = []
-time_data = []
+# Function to open the simulation mode in a new page
+def open_simulation_mode():
+    simulation_window = tk.Toplevel(root)
+    simulation_window.title("Simulation Mode")
+    simulation_window.geometry("1000x800")
+    simulation_window.configure(bg="#f0f0f0")
 
-# Simulation mode flag
-simulation_mode = False
+    def simulate():
+        try:
+            # Fetch user inputs
+            max_altitude = float(altitude_entry.get())
+            max_temp = float(temperature_entry.get())
+            min_pressure = float(pressure_entry.get())
 
-# Function to update the graphs
-def update_graphs(i):
-    global altitude_data, pressure_data, temperature_data, voltage_data, time_data
+            # Generate simulation data
+            time = np.linspace(0, 100, 500)
+            altitude = max_altitude * np.sin(np.pi * time / max(time))
+            temperature = max_temp * np.cos(np.pi * time / max(time))
+            pressure = min_pressure + (1013 - min_pressure) * np.sin(np.pi * time / max(time))
 
-    # Clear previous plots
-    for ax in axes:
-        ax.clear()
+            # Clear and redraw graphs
+            for ax in axs:
+                ax.clear()
 
-    # Plot Altitude
-    axes[0].plot(time_data, altitude_data, label='Altitude', color='blue')
-    axes[0].set_title('Altitude')
-    axes[0].set_xlabel('Time (s)')
-    axes[0].set_ylabel('Altitude (m)')
+            axs[0].plot(time, altitude, label="Altitude (m)", color="#4caf50", linewidth=2)
+            axs[0].set_title("Altitude vs Time", fontsize=14, color="#4caf50")
+            axs[0].set_xlabel("Time (s)", fontsize=12)
+            axs[0].set_ylabel("Altitude (m)", fontsize=12)
+            axs[0].legend()
 
-    # Plot Pressure
-    axes[1].plot(time_data, pressure_data, label='Pressure', color='green')
-    axes[1].set_title('Pressure')
-    axes[1].set_xlabel('Time (s)')
-    axes[1].set_ylabel('Pressure (Pa)')
+            axs[1].plot(time, temperature, label="Temperature (\u00b0C)", color="#f44336", linewidth=2)
+            axs[1].set_title("Temperature vs Time", fontsize=14, color="#f44336")
+            axs[1].set_xlabel("Time (s)", fontsize=12)
+            axs[1].set_ylabel("Temperature (\u00b0C)", fontsize=12)
+            axs[1].legend()
 
-    # Plot Temperature
-    axes[2].plot(time_data, temperature_data, label='Temperature', color='red')
-    axes[2].set_title('Temperature')
-    axes[2].set_xlabel('Time (s)')
-    axes[2].set_ylabel('Temperature (°C)')
+            axs[2].plot(time, pressure, label="Pressure (hPa)", color="#2196f3", linewidth=2)
+            axs[2].set_title("Pressure vs Time", fontsize=14, color="#2196f3")
+            axs[2].set_xlabel("Time (s)", fontsize=12)
+            axs[2].set_ylabel("Pressure (hPa)", fontsize=12)
+            axs[2].legend()
 
-    # Plot Voltage
-    axes[3].plot(time_data, voltage_data, label='Voltage', color='purple')
-    axes[3].set_title('Voltage')
-    axes[3].set_xlabel('Time (s)')
-    axes[3].set_ylabel('Voltage (V)')
+            canvas.draw()
 
-# Function to append new data (simulated or real)
-def append_data(altitude, pressure, temperature, voltage):
-    current_time = time.time() - start_time
-    time_data.append(current_time)
-    altitude_data.append(altitude)
-    pressure_data.append(pressure)
-    temperature_data.append(temperature)
-    voltage_data.append(voltage)
+            # Update visual simulation
+            update_visual_simulation(time, altitude)
 
-# Function to handle mode selection
-def set_mode(simulation, root):
-    global simulation_mode, start_time
-    simulation_mode = simulation
-    root.destroy()
-    start_time = time.time()
-    ani = FuncAnimation(fig, update_graphs, interval=1000)
-    plt.tight_layout()
-    plt.show()
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Please enter valid numerical values.")
 
-# Main interface using Tkinter
-def main():
-    root = tk.Tk()
-    root.title("CanSat Interface")
+    def update_visual_simulation(time, altitude):
+        visual_canvas.delete("all")
+        width = visual_canvas.winfo_width()
+        height = visual_canvas.winfo_height()
 
-    frame_left = ttk.Frame(root)
-    frame_left.pack(side='left', fill='y')
+        for i in range(len(time)):
+            x = int(width * time[i] / max(time))
+            y = int(height - (height * altitude[i] / max(altitude)))
+            visual_canvas.create_oval(x-5, y-5, x+5, y+5, fill="#4caf50", outline="")
+            visual_canvas.update()
+            visual_canvas.after(5)
 
-    frame_right = ttk.Frame(root)
-    frame_right.pack(side='right', expand=True, fill='both')
+    # Input frame for simulation parameters
+    input_frame = ttk.LabelFrame(simulation_window, text="Simulation Parameters", padding=(10, 10))
+    input_frame.pack(fill="x", padx=10, pady=10)
 
-    tabs = ttk.Notebook(frame_left)
-    tabs.pack(pady=10, padx=10)
+    # Input fields
+    altitude_label = ttk.Label(input_frame, text="Max Altitude (m):")
+    altitude_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+    altitude_entry = ttk.Entry(input_frame)
+    altitude_entry.grid(row=0, column=1, padx=5, pady=5)
 
-    tab_graphs = ttk.Frame(tabs)
-    tab_map = ttk.Frame(tabs)
-    tab_telemetry = ttk.Frame(tabs)
-    tab_simulation = ttk.Frame(tabs)
+    temperature_label = ttk.Label(input_frame, text="Max Temperature (\u00b0C):")
+    temperature_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+    temperature_entry = ttk.Entry(input_frame)
+    temperature_entry.grid(row=1, column=1, padx=5, pady=5)
 
-    tabs.add(tab_graphs, text='GRAPHS')
-    tabs.add(tab_map, text='MAP')
-    tabs.add(tab_telemetry, text='TELEMETRY')
-    tabs.add(tab_simulation, text='SIMULATION')
+    pressure_label = ttk.Label(input_frame, text="Min Pressure (hPa):")
+    pressure_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+    pressure_entry = ttk.Entry(input_frame)
+    pressure_entry.grid(row=2, column=1, padx=5, pady=5)
 
-    # Placeholder for graph area in the tab
-    fig, axes = plt.subplots(2, 2, figsize=(8, 6))
-    axes = axes.flatten()
-    canvas = FigureCanvasTkAgg(fig, master=tab_graphs)
+    simulate_button = ttk.Button(input_frame, text="Simulate", command=simulate)
+    simulate_button.grid(row=3, column=0, columnspan=2, pady=10)
+
+    # Plotting area
+    fig, axs = plt.subplots(3, 1, figsize=(8, 10))
+    fig.patch.set_facecolor("#f0f0f0")
+    fig.tight_layout(pad=5.0)
+
+    canvas = FigureCanvasTkAgg(fig, master=simulation_window)
     canvas_widget = canvas.get_tk_widget()
-    canvas_widget.pack()
+    canvas_widget.pack(fill="both", expand=True, side="left", padx=10, pady=10)
 
-    # Commands Section
-    ttk.Label(frame_left, text="Commands").pack(pady=10)
-    commands = ['ST', 'CAL', 'CX ON', 'CX OFF', 'BCN ON', 'BCN OFF', 'CHUTE ⏷', 'CHUTE ⏶', 'HTSHLD ⏷', 'HTSHLD ⏶']
-    for cmd in commands:
-        ttk.Button(frame_left, text=cmd).pack(pady=2)
+    # Visual simulation area
+    visual_frame = ttk.LabelFrame(simulation_window, text="Visual Simulation", padding=(10, 10))
+    visual_frame.pack(fill="both", expand=True, side="right", padx=10, pady=10)
 
-    # Simulation mode button
-    ttk.Button(frame_left, text="Simulation Mode", command=lambda: set_mode(True, root)).pack(pady=10)
-    ttk.Button(frame_left, text="Flight Mode", command=lambda: set_mode(False, root)).pack(pady=10)
+    visual_canvas = tk.Canvas(visual_frame, bg="#333333")
+    visual_canvas.pack(fill="both", expand=True)
 
-    root.mainloop()
+# Create main window
+root = tk.Tk()
+root.title("CanSat 2024 Ground Station")
+root.geometry("800x600")
 
-if __name__ == '__main__':
-    main()
+# Main frame
+main_frame = ttk.Frame(root, padding=(10, 10))
+main_frame.pack(fill="both", expand=True)
+
+# Button to open simulation mode
+simulation_button = ttk.Button(main_frame, text="Open Simulation Mode", command=open_simulation_mode)
+simulation_button.pack(pady=20)
+
+# Run the application
+root.mainloop()

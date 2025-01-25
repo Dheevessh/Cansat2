@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CanSat 2024 Ground Station</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      width: 90%;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .header, .footer {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .panel {
+      flex: 1;
+      padding: 10px;
+      margin: 5px;
+      text-align: center;
+      background: #ddd;
+      border-radius: 5px;
+    }
+
+    .telemetry {
+      width: 100%;
+      height: 150px;
+      background: #eee;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: 300px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #5b88fc;
+      color: white;
+      font-size: 16px;
+    }
+
+    input[type="number"] {
+      padding: 5px;
+      font-size: 16px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 80px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Team Aeroze - CanSat 2024</h1>
+    </div>
+    <div class="row">
+      <div class="panel">
+        <h2>Altitude</h2>
+        <p id="altitude">0</p>
+      </div>
+      <div class="panel">
+        <h2>Air Speed</h2>
+        <p id="airspeed">0</p>
+      </div>
+      <div class="panel">
+        <h2>Air Pressure</h2>
+        <p id="pressure">0</p>
+      </div>
+    </div>
+    <div class="row">
+      <canvas id="graph"></canvas>
+    </div>
+    <div class="row">
+      <button id="simToggle">Start Simulation</button>
+      <label>
+        Altitude:
+        <input type="number" id="simAltitude" value="100">
+      </label>
+      <label>
+        Pressure:
+        <input type="number" id="simPressure" value="1013">
+      </label>
+    </div>
+    <div class="footer">
+      <p>Mission Time: 08:13:23 | GPS Time: 08:13:23</p>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const socket = io();
+
+    // Chart.js Setup
+    const ctx = document.getElementById('graph').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Altitude',
+            data: [],
+            borderColor: 'blue',
+            borderWidth: 2,
+            fill: false
+          },
+          {
+            label: 'Pressure',
+            data: [],
+            borderColor: 'red',
+            borderWidth: 2,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Time'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Values'
+            }
+          }
+        }
+      }
+    });
+
+    // Handle Simulation
+    let simulationActive = false;
+    document.getElementById('simToggle').addEventListener('click', () => {
+      simulationActive = !simulationActive;
+      const button = document.getElementById('simToggle');
+      button.textContent = simulationActive ? 'Stop Simulation' : 'Start Simulation';
+
+      if (simulationActive) {
+        const altitude = parseFloat(document.getElementById('simAltitude').value);
+        const pressure = parseFloat(document.getElementById('simPressure').value);
+
+        socket.emit('startSimulation', { altitude, pressure });
+      } else {
+        socket.emit('stopSimulation');
+      }
+    });
+
+    // Update Data
+    socket.on('serialData', (data) => {
+      document.getElementById('altitude').textContent = data.altitude;
+      document.getElementById('pressure').textContent = data.pressure;
+
+      chart.data.labels.push(data.time);
+      chart.data.datasets[0].data.push(data.altitude);
+      chart.data.datasets[1].data.push(data.pressure);
+
+      chart.update();
+    });
+  </script>
+</body>
+</html>
