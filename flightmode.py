@@ -209,28 +209,28 @@ root.geometry("1200x800")
 root.configure(bg="#f4f4f4")
 
 # Header Frame
-header_frame = tk.Frame(root, bg="#3b82f6", height=80)
+header_frame = tk.Frame(root, bg="#93c5fd", height=80)
 header_frame.pack(fill="x", side="top")
 
 
 
 # Load the Cansat logo image (replace "cansat_logo.png" with the actual file path)
 cansat_logo_image = Image.open("cansat_logo.png")
-cansat_logo_image = cansat_logo_image.resize((50, 50), Image.LANCZOS)  # Use LANCZOS for resizing
+cansat_logo_image = cansat_logo_image.resize((80, 80), Image.LANCZOS)  # Use LANCZOS for resizing
 cansat_logo_photo = ImageTk.PhotoImage(cansat_logo_image)
 
 # Header Frame
-header_label = tk.Label(header_frame, text="Aeroze", bg="#3b82f6", fg="white", font=("Arial", 20, "bold"))
+header_label = tk.Label(header_frame, text="Aeroze", bg="#93c5fd", fg="white", font=("Arial", 20, "bold"))
 header_label.pack(side="left", padx=20, pady=20)
 
 # Add the Cansat logo image next to the header text
-logo_label = tk.Label(header_frame, image=cansat_logo_photo, bg="#3b82f6")
+logo_label = tk.Label(header_frame, image=cansat_logo_photo, bg="#93c5fd")
 logo_label.image = cansat_logo_photo  # Keep a reference to avoid garbage collection
 logo_label.pack(side="left", padx=10)
 
 
 
-status_label = tk.Label(header_frame, text="TEAM ID: 3160   MISSION TIME: 00:00:00.00", bg="#3b82f6", fg="white", font=("Arial", 14))
+status_label = tk.Label(header_frame, text="TEAM ID: 3160   MISSION TIME: 00:00:00.00", bg="#93c5fd", fg="white", font=("Arial", 14))
 status_label.pack(side="right", padx=20, pady=20)
 
 # Sidebar
