@@ -1,9 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
 import csv
-import random
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from PIL import Image, ImageTk
 
 # Function to open telemetry page
 def open_telemetry():
@@ -76,30 +76,51 @@ def open_graphs():
     graphs_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
     fig = Figure(figsize=(10, 4), dpi=100)
-    altitude_plot = fig.add_subplot(221)
+    altitude_plot = fig.add_subplot(121)
     altitude_plot.plot([700, 750, 800, 850, 825], label="Altitude")
     altitude_plot.set_title("Altitude")
 
-    pressure_plot = fig.add_subplot(222)
+    pressure_plot = fig.add_subplot(122)
     pressure_plot.plot([1010, 1015, 1020, 1025, 1030], label="Pressure")
     pressure_plot.set_title("Pressure")
-
-    temperature_plot = fig.add_subplot(223)
-    temperature_plot.plot([25, 26, 27, 28, 29], label="Temperature")
-    temperature_plot.set_title("Temperature")
-
-    velocity_plot = fig.add_subplot(224)
-    velocity_plot.plot([5, 10, 15, 20, 25], label="Velocity")
-    velocity_plot.set_title("Velocity")
 
     canvas = FigureCanvasTkAgg(fig, master=graphs_frame)
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
 # Function to open simulation page
+# Update the simulation function to include a front page with buttons
 def open_simulation():
     clear_main_frame()
 
+    simulation_label = tk.Label(main_frame, text="SIMULATION", font=("Arial", 20), fg="#333", bg="white")
+    simulation_label.pack(pady=10)
+
+    # Front page layout
+    front_page_frame = tk.Frame(main_frame, bg="white")
+    front_page_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+    def activate_simulation_mode():
+        front_page_frame.destroy()  # Clear the front page frame
+        simulation_mode_page()  # Open simulation mode page
+
+    # Buttons for "Enable", "Activate", "Disable"
+    upload_button = tk.Button(front_page_frame, text="Upload CSV", bg="#d0d0d0", font=("Arial", 14), command=upload_csv)
+    upload_button.pack(pady=10)
+
+    enable_button = tk.Button(front_page_frame, text="ENABLE", bg="#c7d7fe", fg="#000", font=("Arial", 14))
+    enable_button.pack(pady=10)
+
+    activate_button = tk.Button(front_page_frame, text="ACTIVATE", bg="#c7d7fe", fg="#000", font=("Arial", 14),
+                                command=activate_simulation_mode)
+    activate_button.pack(pady=10)
+
+    disable_button = tk.Button(front_page_frame, text="DISABLE", bg="#f77", fg="#000", font=("Arial", 14))
+    disable_button.pack(pady=10)
+
+
+# Simulation mode page where the user can add data
+def simulation_mode_page():
     simulation_label = tk.Label(main_frame, text="Simulation Mode", font=("Arial", 20), fg="#333", bg="white")
     simulation_label.pack(pady=10)
 
@@ -112,126 +133,59 @@ def open_simulation():
     graph_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
     # Initialize lists for storing data
-    altitudes = []
     pressures = []
-    temperatures = []
-    velocities = []
+    altitudes = []
 
     def update_graphs():
         """Update the graphs in the graph frame."""
         for widget in graph_frame.winfo_children():
             widget.destroy()
 
-        fig = Figure(figsize=(10, 8), dpi=100)
-
-        # Altitude Plot
-        altitude_plot = fig.add_subplot(221)
-        altitude_plot.plot(altitudes, marker="o", label="Altitude")
-        altitude_plot.set_title("Altitude")
-        altitude_plot.set_xlabel("Data Set")
-        altitude_plot.set_ylabel("Altitude [m]")
+        fig = Figure(figsize=(10, 4), dpi=100)
 
         # Pressure Plot
-        pressure_plot = fig.add_subplot(222)
-        pressure_plot.plot(pressures, marker="o", label="Pressure")
+        pressure_plot = fig.add_subplot(121)
+        pressure_plot.plot(pressures, marker="o", label="Pressure", color="blue")
         pressure_plot.set_title("Pressure")
         pressure_plot.set_xlabel("Data Set")
         pressure_plot.set_ylabel("Pressure [kPa]")
 
-        # Temperature Plot
-        temperature_plot = fig.add_subplot(223)
-        temperature_plot.plot(temperatures, marker="o", label="Temperature")
-        temperature_plot.set_title("Temperature")
-        temperature_plot.set_xlabel("Data Set")
-        temperature_plot.set_ylabel("Temperature [°C]")
-
-        # Velocity Plot
-        velocity_plot = fig.add_subplot(224)
-        velocity_plot.plot(velocities, marker="o", label="Velocity")
-        velocity_plot.set_title("Velocity")
-        velocity_plot.set_xlabel("Data Set")
-        velocity_plot.set_ylabel("Velocity [m/s]")
+        # Altitude Plot (dependent on pressure values)
+        altitude_plot = fig.add_subplot(122)
+        altitude_plot.plot(altitudes, marker="o", label="Altitude", color="green")
+        altitude_plot.set_title("Altitude")
+        altitude_plot.set_xlabel("Data Set")
+        altitude_plot.set_ylabel("Altitude [m]")
 
         canvas = FigureCanvasTkAgg(fig, master=graph_frame)
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-    # Functions to add data for each graph
-    def add_altitude_data():
-        try:
-            altitude = float(altitude_entry.get())
-            altitudes.append(altitude)
-            altitude_entry.delete(0, tk.END)
-            update_graphs()
-        except ValueError:
-            tk.messagebox.showerror("Input Error", "Please enter a valid numerical value for Altitude.")
-
     def add_pressure_data():
+        """Add pressure data and calculate altitude based on a simple formula."""
         try:
             pressure = float(pressure_entry.get())
             pressures.append(pressure)
+            altitude = 44330 * (1 - (pressure / 1013.25) ** (1 / 5.255))  # Simplified barometric formula
+            altitudes.append(altitude)
             pressure_entry.delete(0, tk.END)
             update_graphs()
         except ValueError:
             tk.messagebox.showerror("Input Error", "Please enter a valid numerical value for Pressure.")
 
-    def add_temperature_data():
-        try:
-            temperature = float(temperature_entry.get())
-            temperatures.append(temperature)
-            temperature_entry.delete(0, tk.END)
-            update_graphs()
-        except ValueError:
-            tk.messagebox.showerror("Input Error", "Please enter a valid numerical value for Temperature.")
-
-    def add_velocity_data():
-        try:
-            velocity = float(velocity_entry.get())
-            velocities.append(velocity)
-            velocity_entry.delete(0, tk.END)
-            update_graphs()
-        except ValueError:
-            tk.messagebox.showerror("Input Error", "Please enter a valid numerical value for Velocity.")
-
-    # Entry fields for each graph's data
-    altitude_label = tk.Label(input_frame, text="Altitude [m]:", bg="white")
-    altitude_label.grid(row=0, column=0, sticky="e")
-    altitude_entry = tk.Entry(input_frame, width=20)
-    altitude_entry.grid(row=0, column=1)
-
+    # Entry fields for pressure data
     pressure_label = tk.Label(input_frame, text="Pressure [kPa]:", bg="white")
-    pressure_label.grid(row=1, column=0, sticky="e")
+    pressure_label.grid(row=0, column=0, sticky="e")
     pressure_entry = tk.Entry(input_frame, width=20)
-    pressure_entry.grid(row=1, column=1)
+    pressure_entry.grid(row=0, column=1)
 
-    temperature_label = tk.Label(input_frame, text="Temperature [°C]:", bg="white")
-    temperature_label.grid(row=2, column=0, sticky="e")
-    temperature_entry = tk.Entry(input_frame, width=20)
-    temperature_entry.grid(row=2, column=1)
-
-    velocity_label = tk.Label(input_frame, text="Velocity [m/s]:", bg="white")
-    velocity_label.grid(row=3, column=0, sticky="e")
-    velocity_entry = tk.Entry(input_frame, width=20)
-    velocity_entry.grid(row=3, column=1)
-
-    # Buttons to add data for each graph
-    add_altitude_button = tk.Button(input_frame, text="Add Altitude Data", bg="#3b82f6", fg="white", relief="flat", command=add_altitude_data)
-    add_altitude_button.grid(row=0, column=2, padx=10)
-
-    add_pressure_button = tk.Button(input_frame, text="Add Pressure Data", bg="#3b82f6", fg="white", relief="flat", command=add_pressure_data)
-    add_pressure_button.grid(row=1, column=2, padx=10)
-
-    add_temperature_button = tk.Button(input_frame, text="Add Temperature Data", bg="#3b82f6", fg="white", relief="flat", command=add_temperature_data)
-    add_temperature_button.grid(row=2, column=2, padx=10)
-
-    add_velocity_button = tk.Button(input_frame, text="Add Velocity Data", bg="#3b82f6", fg="white", relief="flat", command=add_velocity_data)
-    add_velocity_button.grid(row=3, column=2, padx=10)
+    # Button to add pressure data
+    add_pressure_button = tk.Button(input_frame, text="Add Pressure Data", bg="#3b82f6", fg="white", relief="flat",
+                                     command=add_pressure_data)
+    add_pressure_button.grid(row=0, column=2, padx=10)
 
     # Initialize with empty graphs
     update_graphs()
-
-
-
 
 
 # Function to upload a CSV file
@@ -258,10 +212,25 @@ root.configure(bg="#f4f4f4")
 header_frame = tk.Frame(root, bg="#3b82f6", height=80)
 header_frame.pack(fill="x", side="top")
 
-header_label = tk.Label(header_frame, text="KoNaR CAN INTO SPACE", bg="#3b82f6", fg="white", font=("Arial", 20, "bold"))
+
+
+# Load the Cansat logo image (replace "cansat_logo.png" with the actual file path)
+cansat_logo_image = Image.open("cansat_logo.png")
+cansat_logo_image = cansat_logo_image.resize((50, 50), Image.LANCZOS)  # Use LANCZOS for resizing
+cansat_logo_photo = ImageTk.PhotoImage(cansat_logo_image)
+
+# Header Frame
+header_label = tk.Label(header_frame, text="Aeroze", bg="#3b82f6", fg="white", font=("Arial", 20, "bold"))
 header_label.pack(side="left", padx=20, pady=20)
 
-status_label = tk.Label(header_frame, text="TEAM ID: 2050   MISSION TIME: 00:00:00.00", bg="#3b82f6", fg="white", font=("Arial", 14))
+# Add the Cansat logo image next to the header text
+logo_label = tk.Label(header_frame, image=cansat_logo_photo, bg="#3b82f6")
+logo_label.image = cansat_logo_photo  # Keep a reference to avoid garbage collection
+logo_label.pack(side="left", padx=10)
+
+
+
+status_label = tk.Label(header_frame, text="TEAM ID: 3160   MISSION TIME: 00:00:00.00", bg="#3b82f6", fg="white", font=("Arial", 14))
 status_label.pack(side="right", padx=20, pady=20)
 
 # Sidebar
