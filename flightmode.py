@@ -219,14 +219,15 @@ cansat_logo_image = Image.open("cansat_logo.png")
 cansat_logo_image = cansat_logo_image.resize((80, 80), Image.LANCZOS)  # Use LANCZOS for resizing
 cansat_logo_photo = ImageTk.PhotoImage(cansat_logo_image)
 
+# Add the logo to the left side
+logo_label = tk.Label(header_frame, image=cansat_logo_photo, bg="#93c5fd")
+logo_label.image = cansat_logo_photo  # Keep a reference to prevent garbage collection
+logo_label.pack(side="left", padx=20, pady=20)  # Position the logo on the left
+
 # Header Frame
 header_label = tk.Label(header_frame, text="Aeroze", bg="#93c5fd", fg="white", font=("Arial", 20, "bold"))
-header_label.pack(side="left", padx=20, pady=20)
+header_label.pack(side="left", padx=10, pady=20)  # Position text on the right
 
-# Add the Cansat logo image next to the header text
-logo_label = tk.Label(header_frame, image=cansat_logo_photo, bg="#93c5fd")
-logo_label.image = cansat_logo_photo  # Keep a reference to avoid garbage collection
-logo_label.pack(side="left", padx=10)
 
 
 
