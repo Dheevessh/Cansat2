@@ -4,6 +4,48 @@ import csv
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image, ImageTk
+import folium
+import tkinterweb
+import serial
+import threading
+
+# Function to open maps page
+def open_maps():
+    clear_main_frame()
+
+    maps_label = tk.Label(main_frame, text="Map", font=("Arial", 20), fg="#333", bg="white")
+    maps_label.pack(pady=10)
+
+    # Create a folium map
+    map_obj = folium.Map(location=[34.2000, -69.0000], zoom_start=10)
+
+    # Save the map to an HTML file
+    map_obj.save("map.html")
+
+    # Embed the map in the Tkinter window
+    map_frame = tkinterweb.HtmlFrame(main_frame, width=1000, height=600)
+    map_frame.load_file("map.html")
+    map_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+    # Start a thread to read data from the serial port and update the map
+    def update_map():
+        try:
+            ser = serial.Serial('COM3', 9600)  # Replace 'COM3' with your comport
+            while True:
+                line = ser.readline().decode('utf-8').strip()
+                if line:
+                    try:
+                        lat, lon = map(float, line.split(','))
+                        map_obj.location = [lat, lon]
+                        folium.Marker([lat, lon]).add_to(map_obj)
+                        map_obj.save("map.html")
+                        map_frame.load_file("map.html")
+                    except ValueError:
+                        print("Invalid data received")
+        except serial.SerialException:
+            print("Could not open serial port")
+
+    threading.Thread(target=update_map, daemon=True).start()
 
 # Function to open telemetry page
 def open_telemetry():
@@ -89,7 +131,6 @@ def open_graphs():
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
 # Function to open simulation page
-# Update the simulation function to include a front page with buttons
 def open_simulation():
     clear_main_frame()
 
@@ -117,7 +158,6 @@ def open_simulation():
 
     disable_button = tk.Button(front_page_frame, text="DISABLE", bg="#f77", fg="#000", font=("Arial", 14))
     disable_button.pack(pady=10)
-
 
 # Simulation mode page where the user can add data
 def simulation_mode_page():
@@ -187,7 +227,6 @@ def simulation_mode_page():
     # Initialize with empty graphs
     update_graphs()
 
-
 # Function to upload a CSV file
 def upload_csv():
     file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
@@ -212,8 +251,6 @@ root.configure(bg="#f4f4f4")
 header_frame = tk.Frame(root, bg="#93c5fd", height=80)
 header_frame.pack(fill="x", side="top")
 
-
-
 # Load the Cansat logo image (replace "cansat_logo.png" with the actual file path)
 cansat_logo_image = Image.open("cansat_logo.png")
 cansat_logo_image = cansat_logo_image.resize((80, 80), Image.LANCZOS)  # Use LANCZOS for resizing
@@ -228,9 +265,6 @@ logo_label.pack(side="left", padx=20, pady=20)  # Position the logo on the left
 header_label = tk.Label(header_frame, text="Aeroze", bg="#93c5fd", fg="white", font=("Arial", 20, "bold"))
 header_label.pack(side="left", padx=10, pady=20)  # Position text on the right
 
-
-
-
 status_label = tk.Label(header_frame, text="TEAM ID: 3160   MISSION TIME: 00:00:00.00", bg="#93c5fd", fg="white", font=("Arial", 14))
 status_label.pack(side="right", padx=20, pady=20)
 
@@ -240,7 +274,7 @@ side_frame.pack(fill="y", side="left")
 
 buttons = [
     ("GRAPHS", open_graphs),
-    ("MAP", None),
+    ("MAP", open_maps),  # Updated to call open_maps
     ("TELEMETRY", open_telemetry),
     ("SIMULATION", open_simulation),
 ]
